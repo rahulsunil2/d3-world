@@ -36,18 +36,6 @@ function initD3() {
 		.domain([d3.max(dataset, (d) => d[1]), 0])
 		.range([padding, h - padding]);
 
-	// console.log(
-	// 	d3.max(dataset, (d) => d[1]),
-	// 	yScale(0),
-	// 	xScale(0)
-	// );
-	console.log(
-		d3.min(dataset, (d) => new Date(d[0])),
-		d3.max(dataset, (d) => new Date(d[0])),
-		d3.min(dataset, (d) => d[0]),
-		xScale(new Date(d3.min(dataset, (d) => d[0])))
-	);
-
 	const xAxis = d3.axisBottom(xScale).ticks(10);
 	const yAxis = d3.axisLeft(yScale).ticks(10);
 
@@ -73,11 +61,10 @@ function initD3() {
 		.data(dataset)
 		.enter()
 		.append("rect")
-		.attr("x", (d, i) => padding + i * barWidth)
+		.attr("x", (d, i) => xScale(new Date(d[0])))
 		.attr("width", barWidth)
 		.attr("y", (d, i) => yScale(d[1]))
 		.attr("height", (d, i) => h - padding - yScale(d[1]))
-		// .attr("fake", (d, i) => console.log(d[1], yScale(d[1]), h - yScale(d[1])))
 		.attr("fill", "navy")
 		.attr("class", "bar")
 		.attr("data-date", (d) => d[0])
