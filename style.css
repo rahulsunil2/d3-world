@@ -59,7 +59,7 @@
 	pointer-events: none;
 }
 
-#y-axis path {
+/* #y-axis path {
 	stroke: black;
 	stroke-width: 1;
 	fill: none;
@@ -69,8 +69,4 @@
 	stroke: black;
 	stroke-width: 1;
 	fill: none;
-}
-
-.info {
-	font-size: 0.8em;
-}
+} */
