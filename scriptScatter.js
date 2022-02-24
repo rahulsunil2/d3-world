@@ -1,4 +1,4 @@
-const projectName = "bar-chart";
+const projectName = "scatter-plot";
 
 var w = 800,
 	h = 400,
@@ -13,9 +13,12 @@ document.addEventListener("DOMContentLoaded", function () {
 	)
 		.then((response) => response.json())
 		.then((data) => {
-			dataset = data.data;
+			dataset = data.map((d) => {
+				d.Time = moment(d.Time, "mm:ss");
+				d.Year = new Date(String(d.Year));
+				return d;
+			});
 			barWidth = (w - 2 * padding) / dataset.length;
-
 			initD3();
 		});
 });
@@ -25,19 +28,21 @@ function initD3() {
 
 	const xScale = d3
 		.scaleTime()
-		.domain([
-			d3.min(dataset, (d) => new Date(d[0])),
-			d3.max(dataset, (d) => new Date(d[0])),
-		])
+		.domain([d3.min(dataset, (d) => d.Year), d3.max(dataset, (d) => d.Year)])
 		.range([padding, w - padding]);
 
 	const yScale = d3
-		.scaleLinear()
-		.domain([d3.max(dataset, (d) => d[1]), 0])
+		.scaleTime()
+		.domain([d3.min(dataset, (d) => d.Time), d3.max(dataset, (d) => d.Time)])
 		.range([padding, h - padding]);
 
-	const xAxis = d3.axisBottom(xScale).ticks(10);
-	const yAxis = d3.axisLeft(yScale).ticks(10);
+	const xAxis = d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat("%Y"));
+	const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+	const yAxis = d3
+		.axisLeft(yScale)
+		.ticks(10)
+		.tickFormat(d3.timeFormat("%M:%S"));
 
 	const toolTip = d3
 		.select(".chart")
@@ -57,18 +62,18 @@ function initD3() {
 		.call(yAxis);
 
 	svg
-		.selectAll("rect")
+		.selectAll("circle")
 		.data(dataset)
 		.enter()
-		.append("rect")
-		.attr("x", (d, i) => xScale(new Date(d[0])))
-		.attr("width", barWidth)
-		.attr("y", (d, i) => yScale(d[1]))
-		.attr("height", (d, i) => h - padding - yScale(d[1]))
-		.attr("fill", "navy")
-		.attr("class", "bar")
-		.attr("data-date", (d) => d[0])
-		.attr("data-gdp", (d) => d[1])
+		.append("circle")
+		.attr("class", "dot")
+		.attr("data-xvalue", (d) => d.Year)
+		.attr("data-yvalue", (d) => d.Time, "mm:ss")
+		.attr("cx", (d) => xScale(d.Year))
+		.attr("cy", (d) => yScale(d.Time))
+		.attr("r", 5)
+		// .attr("fake", (d, i) => console.log(i, d))
+		.attr("fill", (d) => color(!d.Doping.length))
 		.on("mouseover", function (e, d) {
 			var posX = e.pageX - 250;
 			var posY = e.pageY - 300;
@@ -77,13 +82,47 @@ function initD3() {
 					"style",
 					"left:" + posX + "px;top:" + posY + "px; visibility: visible;"
 				)
-				.attr("data-date", d[0])
-				.html("<strong>" + d[1] + "</strong>");
+				.attr("data-year", d.Year)
+				.html("<strong>" + d.Year + "</strong>");
 
 			d3.select(this).style("fill", "#ff33ff");
 		})
 		.on("mouseout", function (d) {
 			d3.select(this).style("fill", "navy");
 			toolTip.attr("style", "visibility: hidden;");
+		});
+
+	console.log(color.domain(), color.range());
+	const legend = svg
+		.append("g")
+		.attr("id", "legend")
+		.selectAll("#legend")
+		.data(color.domain())
+		.enter()
+		.append("g")
+		.attr("class", "legend-label")
+		.attr("transform", function (d, i) {
+			return "translate(0," + (h / 2 - i * 20) + ")";
+		});
+
+	legend
+		.append("rect")
+		.attr("x", w - 18)
+		.attr("width", 18)
+		.attr("height", 18)
+		.style("fill", color);
+
+	legend
+		.append("text")
+		.attr("x", w - 20)
+		.attr("y", 9)
+		.attr("dy", ".35em")
+		.style("text-anchor", "end")
+		.text(function (d) {
+			if (d) {
+				return "Riders with doping allegations";
+			} else {
+				return "No doping allegations";
+			}
 		});
 }
